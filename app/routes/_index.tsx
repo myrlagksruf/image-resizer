@@ -44,7 +44,7 @@ export default function Index() {
       height: "100vh"
     }}>
       <div style={{
-        flexGrow: 1,
+        flexGrow: 2,
         flexBasis: 0,
         minWidth: 800,
         borderRight: "1px solid #C9C9C9",
