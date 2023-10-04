@@ -26,7 +26,8 @@ export const initPattern = () => {
 export const draw = (obj:MyDraw) => {
     const ctx = obj.canvas.getContext('2d')
     if(!ctx) return obj.scale ?? 1
-    if(!obj.pos) obj.pos = [0, 0]
+    let pos = obj.pos
+    if(!pos) pos = [0, 0]
     let {width, height} = obj.canvas
     let {width:imgw, height:imgh} = obj.image
     let scale = obj.scale
@@ -44,21 +45,21 @@ export const draw = (obj:MyDraw) => {
     ctx.fillStyle = pa ?? 'white'
     ctx.fillRect(0, 0, width, height)
     const source = [0, 0, imgw, imgh] as [number, number, number, number]
-    const pos = [0, 0, width, height] as [number, number, number, number]
+    const dest = [0, 0, width, height] as [number, number, number, number]
     if(imgw * scale > width){
-        source[0] = Math.floor((imgw - width / scale) / 2)
+        source[0] = Math.floor((imgw - width / scale) / 2) - pos[0]
         source[2] = Math.floor(width / scale)
     } else{
-        pos[0] = Math.floor((width - imgw * scale) / 2)
-        pos[2] = Math.floor(imgw * scale)
+        dest[0] = Math.floor((width - imgw * scale) / 2) + pos[0] * scale
+        dest[2] = Math.floor(imgw * scale)
     }
     if(imgh * scale > height){
-        source[1] = Math.floor((imgh - height / scale) / 2)
+        source[1] = Math.floor((imgh - height / scale) / 2) - pos[1]
         source[3] = Math.floor(height / scale)
     } else{
-        pos[1] = Math.floor((height - imgh * scale) / 2)
-        pos[3] = Math.floor(imgh * scale)
+        dest[1] = Math.floor((height - imgh * scale) / 2) + pos[1] * scale
+        dest[3] = Math.floor(imgh * scale)
     }
-    ctx.drawImage(obj.image, ...source, ...pos)
+    ctx.drawImage(obj.image, ...source, ...dest)
     return scale
 }

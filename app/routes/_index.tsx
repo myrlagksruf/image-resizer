@@ -14,12 +14,32 @@ const IMAGE_NOT_LOADING = 0,
       IMAGE_LOADING = 1,
       IMAGE_LOADED = 2
 
+const VERTICAL = 0,
+      HORIZONTAL = 1,
+      ALLWAY = 2
+
+const getPos = (obj:{elm:HTMLCanvasElement, x:number, y:number}) => {
+  const { elm, x, y } = obj
+  const { width, height } = getComputedStyle(elm)
+  const w = parseFloat(width)
+  const h = parseFloat(height)
+  const tempScale = Math.max(elm.width / w, elm.height / h)
+  return [tempScale * x, tempScale * y]
+}
+
 export default function Index() {
   const [isEnter, setIsEnter] = useState(false)
   const [loading, setLoading] = useState(IMAGE_NOT_LOADING)
   const [select, setSelect] = useState<[keyof typeof selectObj, number]>(['Instagram', 0])
   const [scale, setScale] = useState(1)
   const [scaleFit, setScaleFit] = useState<'contain'|'cover'|''>('')
+  const [mouseInfo, setMouseInfo] = useState({
+    isDown:false,
+    isFirst:false,
+    way:ALLWAY,
+    pos:[0, 0]
+  })
+  const [curPos, setCurPos] = useState<[number,number]>([0, 0])
   const img = useRef<ImageBitmap>()
   const canvas = useRef<HTMLCanvasElement>(null)
   const pattern = useRef<OffscreenCanvas>()
@@ -31,7 +51,6 @@ export default function Index() {
     setScale(1)
   }
 
-  // Offscreen 이용하기
   const Enter: React.DragEventHandler<HTMLDivElement> = e => {
     if (e.currentTarget === e.target) {
       setIsEnter(true)
@@ -69,20 +88,28 @@ export default function Index() {
   useEffect(() => {
     if(loading !== IMAGE_LOADED) return
     if(!canvas.current || !img.current || !pattern.current) return
-    draw({canvas:canvas.current,image:img.current, pattern:pattern.current,scale})
-  }, [select, loading])
-
-  useEffect(() => {
-    if(loading !== IMAGE_LOADED) return
-    if(!canvas.current || !img.current || !pattern.current) return
-    draw({canvas:canvas.current,image:img.current, pattern:pattern.current,scale})
-  }, [scale])
+    draw({
+      canvas:canvas.current,
+      pos:curPos,
+      image:img.current,
+      pattern:pattern.current,
+      scale
+    })
+  }, [select, loading, scale, curPos])
 
   useEffect(() => {
     if(loading !== IMAGE_LOADED) return
     if(!canvas.current || !img.current || !pattern.current || !scaleFit) return
-    const s = draw({canvas:canvas.current,image:img.current, pattern:pattern.current,fit:scaleFit})
+    setCurPos([0, 0])
+    const s = draw({
+      canvas:canvas.current,
+      pos:[0, 0],
+      image:img.current,
+      pattern:pattern.current,
+      fit:scaleFit
+    })
     setScale(s)
+    setScaleFit('')
   }, [scaleFit])
 
   const inp = useRef<HTMLInputElement>(null)
@@ -94,7 +121,7 @@ export default function Index() {
       height: "100vh"
     }}>
       <div style={{
-        flexGrow: 2,
+        flexGrow: 3,
         flexBasis: 0,
         minWidth: 800,
         borderRight: "1px solid #C9C9C9",
@@ -116,7 +143,21 @@ export default function Index() {
             width:'100%',
             height:'100%',
             objectFit:'contain',
-          }} ref={canvas} width={selectObj[select[0]][select[1]].width} height={selectObj[select[0]][select[1]].height}></canvas>:
+          }} ref={canvas} width={selectObj[select[0]][select[1]].width} height={selectObj[select[0]][select[1]].height}
+            onPointerDown={e => setMouseInfo(v => ({...v, pos:getPos({elm:canvas.current as HTMLCanvasElement, x: e.nativeEvent.offsetX, y:e.nativeEvent.offsetY}), isDown:true, isFirst:true}))}
+            onPointerUp={() => setMouseInfo(v => ({...v, pos:[0, 0], isDown:false, isFirst:false}))}
+            onPointerCancel={() => setMouseInfo(v => ({...v, pos:[0, 0], isDown:false, isFirst:false}))}
+            onPointerMove={e => {
+              if(!mouseInfo.isDown || !canvas.current) return
+              const [x, y] = getPos({elm:canvas.current, x:e.nativeEvent.offsetX, y:e.nativeEvent.offsetY})
+              const [ox, oy] = mouseInfo.pos
+
+              const [dx, dy] = [x - ox, y - oy]
+              console.log(x, y)
+              setMouseInfo(v => ({...v, pos:[x, y]}))
+              setCurPos(v => [v[0] + dx / scale, v[1] + dy / scale])
+            }}
+          ></canvas>:
           <div key={2} style={{
               width: "100%",
               height: "100%",
@@ -151,6 +192,7 @@ export default function Index() {
       <div style={{
         flexGrow: 1,
         minWidth: 200,
+        maxWidth:600,
         fontSize: 20,
         padding:10
       }}>
@@ -216,16 +258,31 @@ export default function Index() {
             }}>{v.width}x{v.height}</div>
           </div>)}
         </div>
-        <div>
-          <div>이미지 비율 : {scale === -1 ? 'contain' : scale === -2 ? 'cover' : scale}</div>
+        <div style={{marginBottom:20}}>
+          <div>이미지 비율 : <input type="number" min={0.01} step={0.01} max={10} value={scale} onChange={e => {
+            if(isNaN(e.currentTarget.valueAsNumber)) return
+            setScale(e.currentTarget.valueAsNumber)
+          }} /></div>
           <input type="range" style={{
             width:'100%'
           }} min={0.01} value={scale.toFixed(3)} max={10} step={0.01} onChange={e => setScale(e.currentTarget.valueAsNumber)}/>
           <div>
-            <button onClick={() => setScaleFit('contain')} style={{fontSize:20,width:100}}>contain</button>
-            <button onClick={() => setScaleFit('cover')} style={{fontSize:20,width:100}}>cover</button>
+            <button onClick={() => setScaleFit('contain')} style={{fontSize:20,width:100, height:30}}>contain</button>
+            <button onClick={() => setScaleFit('cover')} style={{fontSize:20,width:100, height:30}}>cover</button>
           </div>
-        </div>  
+        </div>
+        <div style={{marginBottom:20}}>
+          <div>중심 위치</div>
+          <span style={{display:'inline-block', padding:10}}>x : <input value={curPos[0]} step={0.01} type='number' onChange={e => {
+            if(isNaN(e.currentTarget.valueAsNumber)) return
+            setCurPos(v => [e.currentTarget.valueAsNumber, v[1]])
+          }} /> </span>
+          <span style={{display:'inline-block', padding:10}}>y : <input value={curPos[1]} step={0.01} type='number' onChange={e => {
+            if(isNaN(e.currentTarget.valueAsNumber)) return
+            setCurPos(v => [v[0], e.currentTarget.valueAsNumber])
+          }} /></span>
+          <div style={{marginTop:10}}><button onClick={() => setCurPos([0, 0])} style={{fontSize:20,width:200, height:30}}>위치 가운데로</button></div>
+        </div>
       </div>
     </div>
   );
