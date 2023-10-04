@@ -6,3 +6,12 @@ body{
     margin:0;
     overflow: hidden;
 }
+button{
+    border:none
+}
+button:hover{
+    border:2px solid gray
+}
+button:active{
+    border:2px solid black;
+}
