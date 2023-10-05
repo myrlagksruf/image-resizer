@@ -42,6 +42,7 @@ export default function Index() {
   const [curPos, setCurPos] = useState<[number,number]>([0, 0])
   const img = useRef<ImageBitmap>()
   const canvas = useRef<HTMLCanvasElement>(null)
+  const canvasBack = useRef<HTMLCanvasElement>(null)
   const pattern = useRef<OffscreenCanvas>()
   
   const getImageData = async (file:Blob) => {
@@ -79,9 +80,10 @@ export default function Index() {
   
   useEffect(() => {
     if(loading !== IMAGE_LOADED) return
-    if(!canvas.current || !img.current || !pattern.current) return
+    if(!canvas.current || !img.current || !pattern.current || !canvasBack.current) return
     draw({
       canvas:canvas.current,
+      back:canvasBack.current,
       pos:curPos,
       image:img.current,
       pattern:pattern.current,
@@ -91,10 +93,11 @@ export default function Index() {
 
   useEffect(() => {
     if(loading !== IMAGE_LOADED) return
-    if(!canvas.current || !img.current || !pattern.current || !scaleFit) return
+    if(!canvas.current || !img.current || !pattern.current || !scaleFit || !canvasBack.current) return
     setCurPos([0, 0])
     const s = draw({
       canvas:canvas.current,
+      back:canvasBack.current,
       pos:[0, 0],
       image:img.current,
       pattern:pattern.current,
@@ -108,7 +111,8 @@ export default function Index() {
   return (
     <div style={{
       display: "flex",
-      overflow: "auto",
+      overflowX: "auto",
+      overflowY:'hidden',
       width: "100vw",
       height: "100vh"
     }}>
@@ -130,26 +134,23 @@ export default function Index() {
         onDragOver={e => e.preventDefault()}
       >
         {loading === IMAGE_LOADED ?
-          <canvas style={{
-            border:'1px solid black',
-            width:'100%',
-            height:'100%',
-            objectFit:'contain',
-          }} ref={canvas} width={selectObj[select[0]][select[1]].width} height={selectObj[select[0]][select[1]].height}
-            onPointerDown={e => setMouseInfo(v => ({...v, pos:getPos({elm:canvas.current as HTMLCanvasElement, x: e.nativeEvent.offsetX, y:e.nativeEvent.offsetY}), isDown:true, isFirst:true}))}
-            onPointerUp={() => setMouseInfo(v => ({...v, pos:[0, 0], isDown:false, isFirst:false}))}
-            onPointerCancel={() => setMouseInfo(v => ({...v, pos:[0, 0], isDown:false, isFirst:false}))}
-            onPointerMove={e => {
-              if(!mouseInfo.isDown || !canvas.current) return
-              const [x, y] = getPos({elm:canvas.current, x:e.nativeEvent.offsetX, y:e.nativeEvent.offsetY})
-              const [ox, oy] = mouseInfo.pos
-
-              const [dx, dy] = [x - ox, y - oy]
-              setMouseInfo(v => ({...v, pos:[x, y]}))
-              console.log(scale)
-              setCurPos(v => [v[0] + dx / scale, v[1] + dy / scale])
-            }}
-          ></canvas>:
+          <div style={{position:'relative',width:'100%',height:'100%'}}>
+            <canvas style={{position:'absolute',left:0,top:0}} ref={canvasBack} width={selectObj[select[0]][select[1]].width} height={selectObj[select[0]][select[1]].height}></canvas>
+            <canvas style={{position:'relative'}} ref={canvas} width={selectObj[select[0]][select[1]].width} height={selectObj[select[0]][select[1]].height}
+              onPointerDown={e => setMouseInfo(v => ({...v, pos:getPos({elm:canvas.current as HTMLCanvasElement, x: e.nativeEvent.offsetX, y:e.nativeEvent.offsetY}), isDown:true, isFirst:true}))}
+              onPointerUp={() => setMouseInfo(v => ({...v, pos:[0, 0], isDown:false, isFirst:false}))}
+              onPointerCancel={() => setMouseInfo(v => ({...v, pos:[0, 0], isDown:false, isFirst:false}))}
+              onPointerMove={e => {
+                if(!mouseInfo.isDown || !canvas.current) return
+                const [x, y] = getPos({elm:canvas.current, x:e.nativeEvent.offsetX, y:e.nativeEvent.offsetY})
+                const [ox, oy] = mouseInfo.pos
+  
+                const [dx, dy] = [x - ox, y - oy]
+                setMouseInfo(v => ({...v, pos:[x, y]}))
+                setCurPos(v => [v[0] + dx / scale, v[1] + dy / scale])
+              }}
+            ></canvas>
+          </div>:
           <div key={2} style={{
               width: "100%",
               height: "100%",

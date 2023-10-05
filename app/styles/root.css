@@ -16,6 +16,13 @@ button:active{
     border:2px solid black;
 }
 
+canvas{
+    border:1px solid black;
+    width:100%;
+    height:100%;
+    object-Fit:contain;
+}
+
 canvas:active{
     cursor: crosshair;
 }
