@@ -11,8 +11,10 @@ const c = (ori:number, w:number) => {
     return Math.floor((ori - w) / 2)
 }
 
+const SIZE = 20
+
 export const initPattern = () => {
-    const off = new OffscreenCanvas(20, 20)
+    const off = new OffscreenCanvas(SIZE, SIZE)
     const tempCtx = off.getContext('2d') as OffscreenCanvasRenderingContext2D
     tempCtx.fillStyle = 'rgb(200, 200, 200)'
     tempCtx.fillRect(0, 0, off.width / 2, off.height / 2)
@@ -40,26 +42,14 @@ export const draw = (obj:MyDraw) => {
             scale = 1
         }
     }
+    ctx.imageSmoothingEnabled = true
+    ctx.imageSmoothingQuality = 'high'
+    ctx.setTransform(1, 0, 0, 1, 0, 0)
+    ctx.clearRect(0, 0, width, height)
+    ctx.setTransform(scale, 0, 0, scale, pos[0] * scale + width / 2, pos[1] * scale + height / 2)
     const pa = ctx.createPattern(obj.pattern, 'repeat')
-
     ctx.fillStyle = pa ?? 'white'
-    ctx.fillRect(0, 0, width, height)
-    const source = [0, 0, imgw, imgh] as [number, number, number, number]
-    const dest = [0, 0, width, height] as [number, number, number, number]
-    if(imgw * scale > width){
-        source[0] = Math.floor((imgw - width / scale) / 2) - pos[0]
-        source[2] = Math.floor(width / scale)
-    } else{
-        dest[0] = Math.floor((width - imgw * scale) / 2) + pos[0] * scale
-        dest[2] = Math.floor(imgw * scale)
-    }
-    if(imgh * scale > height){
-        source[1] = Math.floor((imgh - height / scale) / 2) - pos[1]
-        source[3] = Math.floor(height / scale)
-    } else{
-        dest[1] = Math.floor((height - imgh * scale) / 2) + pos[1] * scale
-        dest[3] = Math.floor(imgh * scale)
-    }
-    ctx.drawImage(obj.image, ...source, ...dest)
+    ctx.fillRect(- width / 2 / scale - pos[0], - height / 2 / scale - pos[1], width / scale, height / scale)
+    ctx.drawImage(obj.image, 0, 0, imgw, imgh, Math.floor(- imgw / 2), Math.floor(- imgh / 2), imgw, imgh)
     return scale
 }

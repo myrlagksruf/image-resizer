@@ -74,15 +74,7 @@ export default function Index() {
   }
 
   useEffect(() => {
-    const resize = () => {
-      if(!canvas.current || !img.current || !pattern.current) return
-      setScale(draw({canvas:canvas.current,image:img.current,pattern:pattern.current,scale}))
-    }
     pattern.current = initPattern()
-    window.addEventListener('resize', resize)
-    return () => {
-      window.removeEventListener('resize', resize)
-    }
   }, [])
   
   useEffect(() => {
@@ -153,8 +145,8 @@ export default function Index() {
               const [ox, oy] = mouseInfo.pos
 
               const [dx, dy] = [x - ox, y - oy]
-              console.log(x, y)
               setMouseInfo(v => ({...v, pos:[x, y]}))
+              console.log(scale)
               setCurPos(v => [v[0] + dx / scale, v[1] + dy / scale])
             }}
           ></canvas>:

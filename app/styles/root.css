@@ -15,3 +15,7 @@ button:hover{
 button:active{
     border:2px solid black;
 }
+
+canvas:active{
+    cursor: crosshair;
+}
